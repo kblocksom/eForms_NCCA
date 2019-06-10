@@ -9,7 +9,6 @@
 
 source('global.r')
 
-# Define UI for application that draws a histogram
 ui <- fluidPage(
    
   shinyjs::useShinyjs(),

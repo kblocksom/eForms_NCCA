@@ -19,18 +19,18 @@ suppressPackageStartupMessages(library(kableExtra))
 
 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, messages=FALSE}
 
 include_graphics("NRSA_logo_sm.png")
 
 # Verification and habitat info
 verification <- dplyr::filter(params[['userDataRMD']][['VERIFICATION']][[1]], PARAMETER %in% c('SITE_ID','VISIT_NO', "DATE_COL","STATE","LOC_NAME","CREW",
                                                                                                "ACTUAL_LAT_DD","ACTUAL_LON_DD","VALXSITE",'STATION_DEPTH',
-                                                                                               "GEN_COM","DRCTNS","CREW_LEADER")) %>%
+                                                                                               "DRCTNS","CREW_LEADER")) %>%
   select(PARAMETER, RESULT)
 
 verification_tbl <- filter(verification, !(PARAMETER %in% c('ACTUAL_LAT_DD','ACTUAL_LON_DD',
-                                                            "CREW","DRCTNS","RCHWIDTH" ))) %>%
+                                                            "CREW","DRCTNS"))) %>%
   mutate(PARAMETER = dplyr::recode(PARAMETER, "SITE_ID"='Site ID',"STATE"='State',"VISIT_NO"='Visit Number',
                                    "DATE_COL"='Sample Date',
                                    "LOC_NAME"='Location',"VALXSITE"='Sample Type', 
@@ -40,8 +40,8 @@ verification_tbl <- filter(verification, !(PARAMETER %in% c('ACTUAL_LAT_DD','ACT
 habitat <- dplyr::filter(params[['userDataRMD']][['VERIFICATION']][[1]], PARAMETER %in% c('HABITAT','BOTTOM_TYPE','MARINE_DEBRIS','SAV','SAV_ABUNDANCE','MACROALGAE'
 ,'MACRO_ABUNDANCE','MARINE_DEBRIS_TYPE'))
 
-habitat_tbl <- mutate(habitat, PARAMETER=dplyr::recode(PARAMETER, 'HABITAT'='Habitat Type',
-                                                       'BOTTOM_TYPE'='Bottom type','MARINE_DEBRIS_TYPE'='Debris type present',
+habitat_tbl <- mutate(habitat, PARAMETER=dplyr::recode(PARAMETER, 'HABITAT'='Habitat Type','MARINE_DEBRIS'='Marine debris',
+                                                       'BOTTOM_TYPE'='Bottom type',
                                                        'SAV'='Submerged Aquatic Vegetation (SAV)?','MACROALGAE'='Macroalgae?',
                                                        'SAV_ABUNDANCE'='SAV abundance','MACRO_ABUNDANCE'='Macroalgae abundance')) %>%
   select(PARAMETER,RESULT)
@@ -83,7 +83,6 @@ samplesTaken <- unique(params[['userDataRMD']][['SAMPLE']][[1]]$SAMPLE_TYPE)[!(u
 samples_tbl <- filter(samples, Sample %in% samplesTaken) %>%
   distinct(`Sample Name`, .keep_all=TRUE) %>%
   dplyr::select(`Sample Name`, Description)
-write.csv(samples_tbl,"c:/users/kblockso/local/TestSamplesTable.csv")
 
 ## Profile - skip secchi because might be too confusing to lay person
 profile_tbl <- filter(params[['userDataRMD']][['PROFILE']][[1]], 
@@ -107,17 +106,17 @@ This report provides landowners with preliminary data available after sampling. 
 
 ```{r row 1 tables, echo=F}  
 kable(verification_tbl,col.names=c('Station Information',''), align=c('l','r')) %>%
-  kable_styling(bootstrap_options = 'condensed', full_width = F, position = "float_left") %>%
+  kable_styling(bootstrap_options = 'condensed', full_width = F, position = "left") %>%
   column_spec(1, border_right = T) %>%
   column_spec(2, width = "15em")
 
 kable(habitat_tbl,col.names=c('Habitat Data',''), align=c('l','r')) %>%
-  kable_styling(bootstrap_options = 'condensed', full_width = F, position = "float_left") %>%
+  kable_styling(bootstrap_options = 'condensed', full_width = F, position = "left") %>%
   column_spec(1, border_right = T, width = "10em") %>%
   column_spec(2, width = "15em")
 
 kable(assessment ,col.names=c('Field Assessment',''), align=c('l','r')) %>%
-  kable_styling(bootstrap_options = 'condensed', full_width = F, position = "float_left") %>%
+  kable_styling(bootstrap_options = 'condensed', full_width = F, position = "left") %>%
   column_spec(1, border_right = T, width = "10em") %>%
   column_spec(2, width = "15em")
 
