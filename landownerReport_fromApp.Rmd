@@ -21,16 +21,15 @@ suppressPackageStartupMessages(library(kableExtra))
 
 ```{r, echo=FALSE, messages=FALSE}
 
-include_graphics("NRSA_logo_sm.png")
+include_graphics("NCCA logo_sm.jpg")
 
 # Verification and habitat info
 verification <- dplyr::filter(params[['userDataRMD']][['VERIFICATION']][[1]], PARAMETER %in% c('SITE_ID','VISIT_NO', "DATE_COL","STATE","LOC_NAME","CREW",
-                                                                                               "ACTUAL_LAT_DD","ACTUAL_LON_DD","VALXSITE",'STATION_DEPTH',
+                                                                                               "VALXSITE",'STATION_DEPTH',
                                                                                                "DRCTNS","CREW_LEADER")) %>%
   select(PARAMETER, RESULT)
 
-verification_tbl <- filter(verification, !(PARAMETER %in% c('ACTUAL_LAT_DD','ACTUAL_LON_DD',
-                                                            "CREW","DRCTNS"))) %>%
+verification_tbl <- filter(verification, !(PARAMETER %in% c("CREW","DRCTNS"))) %>%
   mutate(PARAMETER = dplyr::recode(PARAMETER, "SITE_ID"='Site ID',"STATE"='State',"VISIT_NO"='Visit Number',
                                    "DATE_COL"='Sample Date',
                                    "LOC_NAME"='Location',"VALXSITE"='Sample Type', 
@@ -56,7 +55,7 @@ assessment <- dplyr::filter(params[['userDataRMD']][['ASSESSMENT']][[1]], PARAME
   dplyr::select(PARAMETER, RESULT) %>%
   mutate(PARAMETER = recode(PARAMETER,"DOM_LAND_USE"='Shoreline dominant land use', 
                             "WEATHER"= 'Weather',"FOR_AGE_CLASS"= 'Shoreline forest age class','TRASH_PLASTIC_BOTTLES'='Plastic bottle trash',
-                            'TRASH_OTHER_PLASTICS'='Other plastic trash','TRASH_OTHER'='Other trash','TRASH_TIRES'='Tires',
+                            'TRASH_OTHER_PLASTIC'='Other plastic trash','TRASH_OTHER'='Other trash','TRASH_TIRES'='Tires',
                             'FISHING_GEAR'='Fishing gear trash','TRASH_ALUMINUM_CANS'='Aluminum can trash'),
          group = PARAMETER) %>%
   mutate(group= recode(group, 'Shoreline dominant land use'=2,'Weather'= 1,'Shoreline forest age class'= 3,'Aluminum can trash' = 4,
