@@ -10,12 +10,12 @@
 source('global.r')
 
 ui <- fluidPage(
-   
+  theme="style.css", 
   shinyjs::useShinyjs(),
   # Application title
-  navbarPage("NCCA/NGLA 2020 Rapid Data Extraction and Reporting Tool",
+  navbarPage("NCCA 2020 Rapid Data Extraction and Reporting Tool",
              tabPanel(span('About',title='How to use this Shiny app'),
-                      fluidRow(column(2, img(src='oregon_stream.png', align='left')),
+                      fluidRow(column(2, img(src='SanJuanIslandsWA.png', align='left')),
                                column(6,h2(strong('Tool Overview')), offset=1,
                                       p('The Rapid Data Extraction and Reporting Tool expedites data availability
                                         to field crews and offers preliminary end-of-day site reports to landowners to 
