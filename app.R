@@ -108,7 +108,7 @@ server <- function(input, output, session) {
   
   # Download Excel File
   output$downloadxlsx<- downloadHandler(filename = function() { 
-    paste(str_extract(filesInDir()[1],"[:alnum:]+\\-[:alnum:]+\\_[:alnum:]+\\_|[:alnum:]+\\_[:alpha:]+\\-[:alnum:]\\_[:alnum:]+\\_"),
+    paste(str_extract(filesInDir()[1],"[:alnum:]+[:punct:][:alpha:]+[:punct:][:alnum:]+[:punct:][:alnum:][:punct:]"),
           "summary.xlsx")},
     content = function(file) {
       write_xlsx(karenWriteShiny(as.vector(input$directory$name), userData$finalOut), path = file)}
@@ -118,7 +118,7 @@ server <- function(input, output, session) {
   # Download CSV
   
   output$downloadcsv <- downloadHandler( filename = function() {
-    paste(str_extract(filesInDir()[1],"[:alnum:]+\\-[:alnum:]+\\_[:alnum:]+\\_|[:alnum:]+\\_[:alpha:]+\\-[:alnum:]\\_[:alnum:]+\\_"), "csvFiles.zip", sep="")
+    paste(str_extract(filesInDir()[1],"[:alnum:]+[:punct:][:alpha:]+[:punct:][:alnum:]+[:punct:][:alnum:][:punct:]"), "csvFiles.zip", sep="")
   },
   content = function(fname) {
     fs <- c()
@@ -126,7 +126,7 @@ server <- function(input, output, session) {
     z <- karenWriteShiny(as.vector(input$directory$name), userData$finalOut) 
     
     for (i in 1:length(z)) {
-      path <- paste0(str_extract(filesInDir()[1],"[:alnum:]+\\-[:alnum:]+\\_[:alnum:]+\\_|[:alnum:]+\\_[:alpha:]+\\-[:alnum:]\\_[:alnum:]+\\_"),
+      path <- paste0(str_extract(filesInDir()[1],"[:alnum:]+[:punct:][:alpha:]+[:punct:][:alnum:]+[:punct:][:alnum:][:punct:]"),
         names(z)[[i]], ".csv")
       fs <- c(fs, path)
       write.csv(data.frame(z[[i]]), path, row.names=F)

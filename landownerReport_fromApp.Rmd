@@ -10,7 +10,6 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
-suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(knitr))
 suppressPackageStartupMessages(library(kableExtra))
 
@@ -19,55 +18,84 @@ suppressPackageStartupMessages(library(kableExtra))
 
 
 
-```{r, echo=FALSE, messages=FALSE}
+```{r verif, echo=FALSE, messages=FALSE}
 
 include_graphics("NCCA logo_sm.jpg")
 
 # Verification and habitat info
-verification <- dplyr::filter(params[['userDataRMD']][['VERIFICATION']][[1]], PARAMETER %in% c('SITE_ID','VISIT_NO', "DATE_COL","STATE","LOC_NAME","CREW",
-                                                                                               "VALXSITE",'STATION_DEPTH',
-                                                                                               "DRCTNS","CREW_LEADER")) %>%
-  select(PARAMETER, RESULT)
+verification <- subset(params[['userDataRMD']][['VERIFICATION']][[1]], 
+                       PARAMETER %in% c('SITE_ID','VISIT_NO', "DATE_COL","LOC_NAME",
+                                        "VALXSITE",'STATION_DEPTH','GEN_COM'))
 
-verification_tbl <- filter(verification, !(PARAMETER %in% c("CREW","DRCTNS"))) %>%
-  mutate(PARAMETER = dplyr::recode(PARAMETER, "SITE_ID"='Site ID',"STATE"='State',"VISIT_NO"='Visit Number',
-                                   "DATE_COL"='Sample Date',
-                                   "LOC_NAME"='Location',"VALXSITE"='Sample Type', 
-                                   "STATION_DEPTH"= 'Station Depth (m)' ,
-                                   "CREW_LEADER"='Crew Leader'))
+verification_tbl <- subset(verification, !(PARAMETER %in% c("CREW")), select=c('PARAMETER','RESULT'))
+verification_tbl$PARAMETER[verification_tbl$PARAMETER=='SITE_ID'] <- 'Site ID'
+verification_tbl$PARAMETER[verification_tbl$PARAMETER=='VISIT_NO'] <- 'Visit Number'
+verification_tbl$PARAMETER[verification_tbl$PARAMETER=='DATE_COL'] <- 'Sample Date'
+verification_tbl$PARAMETER[verification_tbl$PARAMETER=='LOC_NAME'] <- 'Location'
+verification_tbl$PARAMETER[verification_tbl$PARAMETER=='VALXSITE'] <- 'Sample Type'
+verification_tbl$PARAMETER[verification_tbl$PARAMETER=='GEN_COM'] <- 'General Site Comments'
+verification_tbl$PARAMETER[verification_tbl$PARAMETER=='STATION_DEPTH'] <- 'Station Depth (m)'
 
-habitat <- dplyr::filter(params[['userDataRMD']][['VERIFICATION']][[1]], PARAMETER %in% c('HABITAT','BOTTOM_TYPE','MARINE_DEBRIS','SAV','SAV_ABUNDANCE','MACROALGAE'
+```
+
+```{r habitat, echo=FALSE}
+habitat <- subset(params[['userDataRMD']][['VERIFICATION']][[1]], PARAMETER %in% c('HABITAT','BOTTOM_TYPE','MARINE_DEBRIS','SAV','SAV_ABUNDANCE','MACROALGAE'
 ,'MACRO_ABUNDANCE','MARINE_DEBRIS_TYPE'))
+  
+habitat_tbl <- habitat
+habitat_tbl$PARAMETER[habitat_tbl$PARAMETER=='HABITAT'] <- 'Habitat Type'
+habitat_tbl$PARAMETER[habitat_tbl$PARAMETER=='MARINE_DEBRIS'] <- 'Marine debris'
+habitat_tbl$PARAMETER[habitat_tbl$PARAMETER=='MARINE_DEBRIS_TYPE'] <- 'Marine debris type'
+habitat_tbl$PARAMETER[habitat_tbl$PARAMETER=='BOTTOM_TYPE'] <- 'Bottom type'
+habitat_tbl$PARAMETER[habitat_tbl$PARAMETER=='SAV'] <- 'Submerged Aquatic Vegetation (SAV)?'
+habitat_tbl$PARAMETER[habitat_tbl$PARAMETER=='MACROALGAE'] <- 'Macroalgae?'
+habitat_tbl$PARAMETER[habitat_tbl$PARAMETER=='SAV_ABUNDANCE'] <- 'SAV abundance'
+habitat_tbl$PARAMETER[habitat_tbl$PARAMETER=='MACRO_ABUNDANCE'] <- 'Macroalgae abundance'
 
-habitat_tbl <- mutate(habitat, PARAMETER=dplyr::recode(PARAMETER, 'HABITAT'='Habitat Type','MARINE_DEBRIS'='Marine debris',
-                                                       'BOTTOM_TYPE'='Bottom type',
-                                                       'SAV'='Submerged Aquatic Vegetation (SAV)?','MACROALGAE'='Macroalgae?',
-                                                       'SAV_ABUNDANCE'='SAV abundance','MACRO_ABUNDANCE'='Macroalgae abundance')) %>%
-  select(PARAMETER,RESULT)
+habitat_tbl <- subset(habitat_tbl, select=c('PARAMETER', 'RESULT'))
 
+```
 
+```{r assess, echo=FALSE}
 
 ## Assessment info
-assessment <- dplyr::filter(params[['userDataRMD']][['ASSESSMENT']][[1]], PARAMETER %in% c('WEATHER','DOM_LAND_USE','FOR_AGE_CLASS',
-                                                                                           'TRASH_PLASTIC_BOTTLES','TRASH_OTHER_PLASTIC',
-                                                                                           'TRASH_OTHER','FISHING_GEAR','TRASH_ALUMINUM_CANS',
-                                                                                           'TRASH_TIRES')) %>% 
-  dplyr::select(PARAMETER, RESULT) %>%
-  mutate(PARAMETER = recode(PARAMETER,"DOM_LAND_USE"='Shoreline dominant land use', 
-                            "WEATHER"= 'Weather',"FOR_AGE_CLASS"= 'Shoreline forest age class','TRASH_PLASTIC_BOTTLES'='Plastic bottle trash',
-                            'TRASH_OTHER_PLASTIC'='Other plastic trash','TRASH_OTHER'='Other trash','TRASH_TIRES'='Tires',
-                            'FISHING_GEAR'='Fishing gear trash','TRASH_ALUMINUM_CANS'='Aluminum can trash'),
-         group = PARAMETER) %>%
-  mutate(group= recode(group, 'Shoreline dominant land use'=2,'Weather'= 1,'Shoreline forest age class'= 3,'Aluminum can trash' = 4,
-                       'Plastic bottle trash'=5,'Other plastic trash'=6,'Fishing gear trash'=7,'Tires'=8,'Other trash'=9)) %>%
-  arrange(group) %>%
-  dplyr::select(-group) 
-  
+assessment <- subset(params[['userDataRMD']][['ASSESSMENT']][[1]], PARAMETER %in% 
+                       c('WEATHER','DOM_LAND_USE','FOR_AGE_CLASS','TRASH_PLASTIC_BOTTLES',
+                         'TRASH_OTHER_PLASTIC','TRASH_OTHER','FISHING_GEAR','TRASH_ALUMINUM_CANS',
+                         'TRASH_TIRES'), select = c('PARAMETER','RESULT'))
 
+assessment_tbl <- assessment
+
+assessment_tbl$group[assessment_tbl$PARAMETER=='DOM_LAND_USE'] <- 2
+assessment_tbl$group[assessment_tbl$PARAMETER=='WEATHER'] <- 1
+assessment_tbl$group[assessment_tbl$PARAMETER=='FOR_AGE_CLASS'] <- 3
+assessment_tbl$group[assessment_tbl$PARAMETER=='TRASH_PLASTIC_BOTTLES'] <- 5
+assessment_tbl$group[assessment_tbl$PARAMETER=='TRASH_OTHER_PLASTIC'] <- 6
+assessment_tbl$group[assessment_tbl$PARAMETER=='TRASH_OTHER'] <- 9
+assessment_tbl$group[assessment_tbl$PARAMETER=='TRASH_TIRES'] <- 7
+assessment_tbl$group[assessment_tbl$PARAMETER=='FISHING_GEAR'] <- 2
+assessment_tbl$group[assessment_tbl$PARAMETER=='TRASH_ALUMINUM_CANS'] <- 4
+
+assessment_tbl$PARAMETER[assessment_tbl$PARAMETER=='DOM_LAND_USE'] <- 'Shoreline dominant land use'
+assessment_tbl$PARAMETER[assessment_tbl$PARAMETER=='WEATHER'] <- 'Weather'
+assessment_tbl$PARAMETER[assessment_tbl$PARAMETER=='FOR_AGE_CLASS'] <- 'Shoreline forest age class'
+assessment_tbl$PARAMETER[assessment_tbl$PARAMETER=='TRASH_PLASTIC_BOTTLES'] <- 'Plastic bottle trash'
+assessment_tbl$PARAMETER[assessment_tbl$PARAMETER=='TRASH_OTHER_PLASTIC'] <- 'Other plastic trash'
+assessment_tbl$PARAMETER[assessment_tbl$PARAMETER=='TRASH_OTHER'] <- 'Other trash'
+assessment_tbl$PARAMETER[assessment_tbl$PARAMETER=='TRASH_TIRES'] <- 'Trash'
+assessment_tbl$PARAMETER[assessment_tbl$PARAMETER=='FISHING_GEAR'] <- 'Fishing gear trash'
+assessment_tbl$PARAMETER[assessment_tbl$PARAMETER=='TRASH_ALUMINUM_CANS'] <- 'Aluminum can trash'
+
+assessment_tbl <- assessment_tbl[order(assessment_tbl$group),]
+assessment_tbl <- subset(assessment_tbl, select = -group)
+
+```
+
+```{r samples, echo=FALSE}
 ## samples collected
 # generic samples and description
-samples <- tibble(Sample = c('CHEM', 'WCHL', 'NUTS', 'MICX', 'ENTE','BENT','PHYT','SEDO','SEDX','SEDC','SEDG'),
-                  `Sample Name` = c('Water Chemistry','Water Chlorophyll a','Nutrients',
+samples <- data.frame(Sample = c('CHEM', 'WCHL', 'NUTS', 'MICX', 'ENTE','BENT','PHYT','SEDO','SEDX','SEDC','SEDG'),
+                  Sample.Name = c('Water Chemistry','Water Chlorophyll a','Nutrients',
                                     'Microcystin & Cylindrospermopsin', 'Enterococci','Benthic Macroinvertebrates',
                                     'Phytoplankton','Sediment Organics','Sediment Toxicity',
                                     'Sediment TOC','Sediment Grain Size'),
@@ -79,24 +107,28 @@ samples <- tibble(Sample = c('CHEM', 'WCHL', 'NUTS', 'MICX', 'ENTE','BENT','PHYT
                                   'Sediment grain size'))
 # filter to only what was collected
 samplesTaken <- unique(params[['userDataRMD']][['SAMPLE']][[1]]$SAMPLE_TYPE)[!(unique(params[['userDataRMD']][['SAMPLE']][[1]]$SAMPLE_TYPE) %in% 'SAMP')]
-samples_tbl <- filter(samples, Sample %in% samplesTaken) %>%
-  distinct(`Sample Name`, .keep_all=TRUE) %>%
-  dplyr::select(`Sample Name`, Description)
 
-## Profile - skip secchi because might be too confusing to lay person
-profile_tbl <- filter(params[['userDataRMD']][['PROFILE']][[1]], 
-                      PARAMETER %in% c('DEPTH','TEMPERATURE','DO','PH','CONDUCTIVITY')) %>%
-  select(LINE,PARAMETER,RESULT) %>%
-  mutate(PARAMETER=recode(PARAMETER, "DEPTH"='Depth (m)','TEMPERATURE'='Temperature (C)',
-                          'DO'='Dissolved Oxygen (mg/L)','CONDUCTIVITY'='Conductivity uS/cm','PH'='pH')) %>%
-  dcast(LINE~PARAMETER,value.var='RESULT') %>%
-  arrange(LINE) %>%
-  select('Depth (m)','Dissolved Oxygen (mg/L)','Temperature (C)','pH','Conductivity uS/cm')
-
+samples_tbl <- subset(samples, Sample %in% samplesTaken)
+samples_tbl <- samples_tbl[!duplicated(samples_tbl[, c('Sample.Name')]), c('Sample.Name','Description')]
 
 ```
 
-##National Rivers and Streams Assessment Landowner Report
+```{r profile,echo=FALSE}
+## Profile - skip secchi because might be too confusing to lay person
+profile_tbl <- subset(params[['userDataRMD']][['PROFILE']][[1]], 
+                      PARAMETER %in% c('DEPTH','TEMPERATURE','DO','PH','CONDUCTIVITY'),
+                      select = c('LINE','PARAMETER','RESULT'))
+
+profile_tbl.wide <- reshape(profile_tbl, idvar = c('LINE'), direction = 'wide',
+                            v.names = 'RESULT', timevar = 'PARAMETER')
+profile_tbl.wide <- profile_tbl.wide[order(profile_tbl.wide$LINE),]
+names(profile_tbl.wide) <- gsub('RESULT\\.', '', names(profile_tbl.wide))
+
+profile_tbl.wide <- base::subset(profile_tbl.wide, select = c('DEPTH','DO','TEMPERATURE','PH','CONDUCTIVITY'))
+
+```
+
+## National Coastal Condition/Great Lakes Assessment Landowner Report
 
 #### About
 This report provides landowners with preliminary data available after sampling. Additional information can be provided to you after laboratory analyses are completed. If you would like to be notified when this information is available, please contact the Crew Leader.
@@ -104,17 +136,17 @@ This report provides landowners with preliminary data available after sampling. 
 
 
 ```{r row 1 tables, echo=F}  
-kable(verification_tbl,col.names=c('Station Information',''), align=c('l','r')) %>%
+kable(verification_tbl,col.names=c('Station Information',''), align=c('l','r'), row.names=F) %>%
   kable_styling(bootstrap_options = 'condensed', full_width = F, position = "left") %>%
   column_spec(1, border_right = T) %>%
   column_spec(2, width = "15em")
 
-kable(habitat_tbl,col.names=c('Habitat Data',''), align=c('l','r')) %>%
+kable(habitat_tbl,col.names=c('Habitat Data',''), align=c('l','r'), row.names=F) %>%
   kable_styling(bootstrap_options = 'condensed', full_width = F, position = "left") %>%
   column_spec(1, border_right = T, width = "10em") %>%
   column_spec(2, width = "15em")
 
-kable(assessment ,col.names=c('Field Assessment',''), align=c('l','r')) %>%
+kable(assessment_tbl ,col.names=c('Field Assessment',''), align=c('l','r'), row.names=F) %>%
   kable_styling(bootstrap_options = 'condensed', full_width = F, position = "left") %>%
   column_spec(1, border_right = T, width = "10em") %>%
   column_spec(2, width = "15em")
@@ -125,13 +157,15 @@ kable(assessment ,col.names=c('Field Assessment',''), align=c('l','r')) %>%
 
 
 ```{r row 2 tables, echo=F}
-kable(samples_tbl, align=c('l','r')) %>%
+kable(samples_tbl, col.names=c('Sample Name', 'Description'), row.names = FALSE, align=c('l','r')) %>%
   add_header_above(c('Samples Sent for Laboratory Analysis'=2)) %>%
   kable_styling(bootstrap_options = 'condensed', full_width = F, position = "float_left") %>%
   column_spec(1, border_right = T, width = "15em") %>%
   column_spec(2, width = "15em")
 
-kable(profile_tbl, align=c('l','c','c','c','c')) %>%
+kable(profile_tbl.wide, col.names = c('Depth (m)','Dissolved Oxygen (mg/L)','Temperature (C)',
+                                 'pH','Conductivity uS/cm'), row.names = FALSE, 
+      align=c('l','c','c','c','c')) %>%
   add_header_above(c("Depth profile" = 5)) %>%
   kable_styling(bootstrap_options = 'condensed', full_width = F, position = "float_left") %>%
   column_spec(1, border_right = T, width = "12em") %>%

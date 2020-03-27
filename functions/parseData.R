@@ -16,23 +16,33 @@ karenOrganizationShiny <- function(pathlist,filelist){
 
     
     # This step parses data and then organizes data in each file
-    if(str_detect(fileName,'SHIP',negate=TRUE)){
-    finalOut[[fileName %>% 
-                str_replace("[:alnum:]+\\-[:alnum:]+\\_[:alnum:]+\\_|[:alnum:]+\\_[:alpha:]+\\-[:alnum:]\\_[:alnum:]+\\_",'') %>%
-                str_replace('.json*','') %>% 
-                str_replace('.*/','') ]] <- eFormsParseJSON(filePath) %>%
-      eFormsOrganize_byTable()  }
+    if(grepl('SHIP', fileName, ignore.case=TRUE)==FALSE){
+      
+      fileName <- gsub("[[:alnum:]]+[[:punct:]][[:alnum:]]+[[:punct:]][[:alnum:]]+[[:punct:]][[:alnum:]][[:punct:]]", '', fileName)
+      fileName <- gsub('.json*', '', fileName)
+      fileName <- gsub(".*/", "", fileName)
+      
+      rr <- eFormsParseJSON(filePath)
+      tt <- eFormsOrganize_byTable(rr)
+      
+      finalOut[[fileName]] <- tt
+      
+    # finalOut[[fileName %>% 
+    #             str_replace("[:alnum:]+[:punct:][:alnum:]+[:punct:][:alnum:]+[:punct:][:alnum:][:punct:]",'') %>%
+    #             str_replace('.json*','') %>% 
+    #             str_replace('.*/','') ]] <- eFormsParseJSON(filePath) %>%
+    #   eFormsOrganize_byTable()  }
     }
+  }
   
     return(finalOut)
-  }
+}
     
 
 
 karenWriteShiny <- function(filelist, finalList){
   # Create the first part of the filename for writing to a .csv file, based on visit info and sample type
-#  subName.out <- str_extract(paste(path,filelist[1],sep='/'),"[:alnum:]+\\_[:alpha:]+\\_[:alnum:]+\\_[:alnum:]\\_")
-  subName.out <- str_extract(filelist[1],"[:alnum:]+\\-[:alnum:]+\\_[:alnum:]+\\_|[:alnum:]+\\_[:alpha:]+\\-[:alnum:]\\_[:alnum:]+\\_")
+  subName.out <- str_extract(filelist[1],"[:alnum:]+[:punct:][:alnum:]+[:punct:][:alnum:]+[:punct:][:alnum:][:punct:]")
   print(subName.out)
   #if( fileFormat == '.xlsx'){
     objLen <- map(finalList, length)

@@ -10,10 +10,7 @@ eFormsOrganize_byTable <- function(rawData){
   visitinfo <- as.data.frame(rawData[1:7],stringsAsFactors=F)
   # Extract sample type from 8th element in each file
   sampletype <- names(rawData)[8]
-  # # PHAB sample types are special
-  # sampletype <- ifelse(substring(sampletype,1,5) %in% c('PHABW','PHABB'),substring(sampletype,1,5),
-  #                      sampletype)
-   
+
   # Create data frame of parsed data to start with, making them all character variables 
   parsedData <- as.data.frame(rawData[8])
   parsedData[,names(parsedData)] <- lapply(parsedData[,names(parsedData)], as.character)
@@ -24,7 +21,10 @@ eFormsOrganize_byTable <- function(rawData){
     CALIBRATION = {rr <- organizeCalibration(parsedData)},
     VERIFICATION = {rr = organizeVerification(parsedData)},
     SAMPLES = {rr = organizeSamples(parsedData)},
-    PROFILE = {rr = organizeProfile(parsedData)}
+    PROFILE = {rr = organizeProfile(parsedData)},
+    ECOFISH = {rr = organizeEcofish(parsedData)},
+    HHFISH = {rr = organizeHHfish(parsedData)},
+    SAMPLE_PROCESS = {rr = organizeSampProc(parsedData)}
   )
   
   ss <- list(cbind(visitinfo, rr))
@@ -38,57 +38,84 @@ eFormsOrganize_byTable <- function(rawData){
 
 organizeVerification <- function(parsedIn){
 # Simply melt these data and clean up parameter names
-  aa <- mutate(parsedIn, SAMPLE_TYPE='VERIF') %>%
-    melt(id.vars=c('SAMPLE_TYPE'), variable.name='PARAMETER', value.name='RESULT') %>%
-    mutate(PARAMETER=gsub('VERIFICATION\\.', '', PARAMETER)) %>%
-    select(SAMPLE_TYPE, PARAMETER, RESULT) %>%
-    mutate(SAMPLE_TYPE=ifelse(str_detect(PARAMETER,'MACRO_ALGAE|BOTTOM_TYPE|HABITAT|MACRO_ABUNDANCE|MACROALGAE|MARINE_DEBRIS|MARINE_DEBRIS_TYPE|SAV|SAV_ABUNDANCE'),'SHAB','VERIF'))
+  aa <- parsedIn
+  aa$SAMPLE_TYPE <- 'VERIF'
   
-  return(aa)
+  varLong <- names(parsedIn)
+  aa.long <- reshape(aa, idvar=c('SAMPLE_TYPE'), varying = varLong, times = varLong,
+                     v.names = 'RESULT', timevar = 'PARAMETER', direction = 'long')
+  aa.long$PARAMETER <- with(aa.long, gsub('VERIFICATION\\.', '', PARAMETER)) 
+  
+  aa.long$SAMPLE_TYPE <- with(aa.long, ifelse(grepl('MACRO_ALGAE|BOTTOM_TYPE|HABITAT|MACRO_ABUNDANCE|MACROALGAE|MARINE_DEBRIS|MARINE_DEBRIS_TYPE|SAV|SAV_ABUNDANCE', PARAMETER), 'SHAB', 'VERIF'))
+  
+  aa.out <- base::subset(aa.long, select = c('SAMPLE_TYPE','PARAMETER','RESULT'))
+  
+  return(aa.out)
+  
 }
 
 organizeSamples <- function(parsedIn){
   # Simply melt these data by SAMPLE_TYPE and clean up parameter names
-  aa <- mutate(parsedIn, SAMPLE_TYPE='SAMPLES') %>%
-    melt(id.vars=c('SAMPLE_TYPE'), value.name='RESULT') %>%
-    mutate(SAMPLE_TYPE=substring(as.character(variable),9,12), 
-           PARAMETER=ifelse(str_detect(variable,'\\_COMMENT'),substring(as.character(variable),9,nchar(as.character(variable))),
-                            substring(as.character(variable),14,nchar(as.character(variable))))) %>%
-    select(SAMPLE_TYPE, PARAMETER, RESULT)
+  aa <- parsedIn
+  aa$SAMPLE_TYPE <- 'SAMPLES'
   
-  return(aa)
+  varLong <- names(parsedIn)
+  aa.long <- reshape(aa, idvar = 'SAMPLE_TYPE', varying = varLong, times = varLong,
+                     v.names = 'RESULT', timevar = 'variable', direction = 'long')
+  aa.long$SAMPLE_TYPE <- with(aa.long, substring(as.character(variable), 9, 12))
+  aa.long$PARAMETER <- with(aa.long, ifelse(str_detect(variable, '\\_COMMENT'),
+                                      substring(as.character(variable), 9, nchar(as.character(variable))),
+                                      substring(as.character(variable),14,nchar(as.character(variable)))))
+  
+  aa.out <- base::subset(aa.long, select = c('SAMPLE_TYPE','PARAMETER','RESULT'))
+  
+  return(aa.out)
 }
 
 organizeAssessment <- function(parsedIn){
+  aa <- parsedIn
+  aa$SAMPLE_TYPE <- 'ASSESS'
   
-  # Simply melt data and clean up parameter names
-  aa <- mutate(parsedIn, SAMPLE_TYPE='ASSESS') %>%
-    melt(id.vars=c('SAMPLE_TYPE'), variable.name='PARAMETER', value.name='RESULT') %>%
-    mutate(PARAMETER=gsub('ASSESSMENT\\.', '', PARAMETER)) %>%
-    select(SAMPLE_TYPE, PARAMETER, RESULT)
+  aa.long <- reshape(aa, idvar = 'SAMPLE_TYPE', varying = names(parsedIn), 
+                     times = names(parsedIn), v.names = 'RESULT', timevar = 'PARAMETER',
+                     direction = 'long')
   
-  return(aa)
+  aa.long$PARAMETER <- with(aa.long, gsub("ASSESSMENT\\.", "", PARAMETER))
   
+  aa.out <- base::subset(aa.long, select = c('SAMPLE_TYPE','PARAMETER','RESULT'))
+  
+  return(aa.out)
+
 }
 
 organizeProfile <- function(parsedIn){
  # NEED TO FIND PARAMETERS THAT START WITH CHARACTER VS. NUMBER
-  aa <- subset(parsedIn, select=str_starts(names(parsedIn),'PROFILE\\.[:alpha:]')) %>%
-    mutate(LINE='0',SAMPLE_TYPE='HYDRO') %>%
-    melt(id.vars=c('SAMPLE_TYPE','LINE'), variable.name='PARAMETER', value.name='RESULT') %>%
-    select(SAMPLE_TYPE, LINE, PARAMETER, RESULT) %>%
-    mutate(PARAMETER=str_replace(PARAMETER,'PROFILE\\.','')) %>%
-    mutate(SAMPLE_TYPE=ifelse(str_starts(PARAMETER,'CLEAR_TO_BOTTOM|DISAPPEARS|REAPPEARS|SECCHI'),'SECC',SAMPLE_TYPE))
-  # bb pulls out and formats species by line number and sample type
-  bb <- subset(parsedIn, select=str_starts(names(parsedIn), 'PROFILE\\.[:digit:]')) %>%
-    mutate(SAMPLE_TYPE='HYDRO') %>%
-    melt(id.vars='SAMPLE_TYPE',value.name='RESULT') %>%
-    mutate(variable = gsub('PROFILE\\.','',variable),
-           LINE=str_extract(variable, '[:digit:]+')) %>%
-    mutate(PARAMETER=str_replace(variable, '[:digit:]+\\_', '')) %>%
-    select(SAMPLE_TYPE, LINE, PARAMETER, RESULT)
-  # stack aa and bb on top of one another
-  cc <- rbind(aa, bb) 
+  aa <- subset(parsedIn, select=str_starts(names(parsedIn),'PROFILE\\.[:alpha:]'))
+  aa$SAMPLE_TYPE <- 'HYDRO'
+  aa$LINE <- '0'
+  
+  varLong <- names(aa)[!(names(aa) %in% c('SAMPLE_TYPE','LINE'))]
+  aa.long <- reshape(aa, idvar = c('SAMPLE_TYPE','LINE'), varying = varLong, times = varLong,
+                     v.names = 'RESULT', timevar = 'PARAMETER', direction = 'long')
+  aa.long$PARAMETER <- with(aa.long, str_replace(PARAMETER, "PROFILE\\.",""))
+  aa.long$SAMPLE_TYPE <- with(aa.long, ifelse(str_starts(PARAMETER,'CLEAR_TO_BOTTOM|DISAPPEARS|REAPPEARS|SECCHI'),'SECC', SAMPLE_TYPE))
+  
+  aa.out <- subset(aa.long, select = c('SAMPLE_TYPE','LINE','PARAMETER','RESULT'))
+  
+# bb pulls out and formats species by line number and sample type
+  bb <- subset(parsedIn, select=str_starts(names(parsedIn), 'PROFILE\\.[:digit:]'))
+  bb$SAMPLE_TYPE <- 'HYDRO'
+  
+  varLong <- names(bb)[names(bb)!='SAMPLE_TYPE']
+  bb.long <- reshape(bb, idvar='SAMPLE_TYPE', varying = varLong, times = varLong,
+                     v.names = 'RESULT', timevar = 'variable', direction = 'long')
+  bb.long$variable <- with(bb.long, gsub('PROFILE\\.', '', variable))
+  bb.long$LINE <- str_extract(bb.long$variable, '[:digit:]+')
+  bb.long$PARAMETER <- str_replace(bb.long$variable, '[:digit:]+\\_', '')
+
+  bb.out <- base::subset(bb.long, select=c('SAMPLE_TYPE','LINE','PARAMETER','RESULT'))
+  
+  cc <- rbind(aa.out, bb.out) 
   
   return(cc)
   
@@ -96,12 +123,71 @@ organizeProfile <- function(parsedIn){
 
 organizeCalibration <- function(parsedIn){
   # Simply melt data and clean up parameter names
-  aa <- mutate(parsedIn, SAMPLE_TYPE='CALIB') %>%
-    melt(id.vars=c('SAMPLE_TYPE'), variable.name='PARAMETER', value.name='RESULT') %>%
-    mutate(PARAMETER=gsub('CALIBRATION\\.', '', PARAMETER)) %>%
-    select(SAMPLE_TYPE, PARAMETER, RESULT)
+  aa <- parsedIn
+  aa$SAMPLE_TYPE <- 'CALIB'
   
-  return(aa)  
+  varLong <- names(aa)[names(aa)!='SAMPLE_TYPE']
+  aa.long <- reshape(aa, idvar = 'SAMPLE_TYPE', varying = varLong, times = varLong,
+                     v.names = 'RESULT', timevar = 'PARAMETER', direction = 'long') 
+  
+  aa.long$PARAMETER <- gsub('CALIBRATION\\.', '', aa.long$PARAMETER)
+  
+  aa.out <- base::subset(aa.long, select = c('SAMPLE_TYPE','PARAMETER','RESULT'))
+
+  return(aa.out)  
   
 }
 
+organizeEcofish <- function(parsedIn){
+  aa <- parsedIn
+  aa$SAMPLE_TYPE <- 'EINF'
+  
+  varLong <- names(aa)[names(aa)!='SAMPLE_TYPE']
+  aa.long <- reshape(aa, idvar = 'SAMPLE_TYPE', varying = varLong, times = varLong,
+                     v.names = 'RESULT', timevar = 'PARAMETER', direction = 'long')
+  aa.long$SAMPLE_TYPE <- substring(aa.long$PARAMETER, 9, 12)
+  aa.long <- subset(aa.long, str_detect(PARAMETER, 'REVIEW')==FALSE)
+  aa.long$PARAMETER <- with(aa.long, substring(PARAMETER, 14, nchar(PARAMETER)))
+  
+  aa.out <- base::subset(aa.long, select = c('SAMPLE_TYPE', 'PARAMETER', 'RESULT'))
+  
+  return(aa.out)
+}
+
+organizeHHfish <- function(parsedIn){
+  aa <- parsedIn
+  aa$SAMPLE_TYPE <- 'HINF' 
+  
+  varLong <- names(aa)[names(aa)!='SAMPLE_TYPE']
+  aa.long <- reshape(aa, idvar = 'SAMPLE_TYPE', varying = varLong, times = varLong,
+                     v.names = 'RESULT', timevar = 'PARAMETER', direction = 'long')
+  
+  aa.long$SAMPLE_TYPE <- substring(aa.long$PARAMETER, 8, 11)
+  aa.long <- subset(aa.long, str_detect(PARAMETER, 'REVIEW')==FALSE)
+  aa.long$PARAMETER <- with(aa.long, substring(PARAMETER, 13, nchar(PARAMETER)))
+  
+  aa.out <- base::subset(aa.long, select = c('SAMPLE_TYPE', 'PARAMETER', 'RESULT'))
+  
+  return(aa.out)
+  
+}
+
+organizeSampProc <- function(parsedIn){
+
+  # Simply melt these data by SAMPLE_TYPE and clean up parameter names
+  aa <- parsedIn
+  aa$SAMPLE_TYPE <- 'SAMPLES'
+  
+  varLong <- names(parsedIn)
+  aa.long <- reshape(aa, idvar = 'SAMPLE_TYPE', varying = varLong, times = varLong,
+                     v.names = 'RESULT', timevar = 'variable', direction = 'long')
+  aa.long$variable <- with(aa.long, gsub('SAMPLE\\_PROCESS\\.', '', variable))
+  aa.long$SAMPLE_TYPE <- with(aa.long, substring(as.character(variable), 1, 4))
+  aa.long <- subset(aa.long, str_detect(variable, 'REVIEW')==FALSE)
+  aa.long$PARAMETER <- substring(aa.long$variable, 6, nchar(aa.long$variable))
+  
+  aa.out <- base::subset(aa.long, select = c('SAMPLE_TYPE','PARAMETER','RESULT'))
+  
+  return(aa.out)
+  
+}
