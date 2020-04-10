@@ -16,7 +16,7 @@ karenOrganizationShiny <- function(pathlist,filelist){
 
     
     # This step parses data and then organizes data in each file
-    if(grepl('SHIP', fileName, ignore.case=TRUE)==FALSE){
+    if(grepl('SHIP|TRACKING', fileName, ignore.case=TRUE)==FALSE){
       
       fileName <- gsub("[[:alnum:]]+[[:punct:]][[:alnum:]]+[[:punct:]][[:alnum:]]+[[:punct:]][[:alnum:]][[:punct:]]", '', fileName)
       fileName <- gsub('.json*', '', fileName)

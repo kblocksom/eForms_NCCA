@@ -15,7 +15,7 @@ ui <- fluidPage(
   # Application title
   navbarPage("NCCA 2020 Rapid Data Extraction and Reporting Tool",
              tabPanel(span('About',title='How to use this Shiny app'),
-                      fluidRow(column(2, img(src='SanJuanIslandsWA.png', align='left')),
+                      fluidRow(column(2, imageOutput("oceanImage")),
                                column(6,h2(strong('Tool Overview')), offset=1,
                                       p('The Rapid Data Extraction and Reporting Tool expedites data availability
                                         to field crews and offers preliminary end-of-day site reports to landowners to 
@@ -75,7 +75,16 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
-   
+  # render stream image
+  output$oceanImage <- renderImage({
+    filename <- normalizePath(file.path('./www',
+                                        paste('SanJuanIslandsWA.png')))
+    
+    # Return list containing the filename and alt text
+    list(src = filename, alt='San Juan Islands photo', align='left',height=150, width=275)
+  },
+  deleteFile=FALSE)
+  
   # Reactive Value to store all user data
   userData <- reactiveValues()
   
@@ -147,7 +156,9 @@ server <- function(input, output, session) {
   # Send input data to html report
   
   output$report <- downloadHandler(
-    paste(unique(userData$finalOut[[1]][[1]]$SITE_ID),unique(userData$finalOut[[1]][[1]]$VISIT_NO),"LandownerReport.html",sep="_"),
+    filename = function(){
+      paste(str_extract(filesInDir()[1],"[:alnum:]+[:punct:][:alpha:]+[:punct:][:alnum:]+[:punct:][:alnum:][:punct:]"),"LandownerReport.html",sep="")
+    },
     content= function(file){
       tempReport <- normalizePath('landownerReport_fromApp.Rmd')
       imageToSend1 <- normalizePath('NCCA logo_sm.jpg')  # choose image name
@@ -170,4 +181,5 @@ server <- function(input, output, session) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
+# shiny::runApp(list(ui = ui, server = server), host="0.0.0.0", port=strtoi(Sys.getenv("PORT")))
 
